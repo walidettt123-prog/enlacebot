@@ -141,13 +141,13 @@
             <!-- Pestaña OBJETIVOS -->
             <div id="objetivos" class="tab-content">
                 <h2><i class="fas fa-bullseye"></i> Objetivos Semanales</h2>
-                <p style="color:#94a3b8; margin-top:20px;">Esta sección está en desarrollo. Pronto podrás añadir y marcar objetivos gamificados.</p>
+                <p style="color:#94a3b8; margin-top:20px;">Esta sección está en desarrollo.</p>
             </div>
 
             <!-- Pestaña RANKING -->
             <div id="ranking" class="tab-content">
                 <h2><i class="fas fa-trophy"></i> Ranking por Clientes</h2>
-                <p style="color:#94a3b8; margin-top:20px;">Esta sección está en desarrollo. Pronto verás el ranking gamificado.</p>
+                <p style="color:#94a3b8; margin-top:20px;">Esta sección está en desarrollo.</p>
             </div>
         </div>
     </div>
@@ -165,16 +165,13 @@
 
     <script>
         function showTab(tab) {
-            // Ocultar todas las pestañas
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-
-            // Mostrar la pestaña seleccionada
             document.getElementById(tab).classList.add('active');
             event.currentTarget.classList.add('active');
         }
 
-        // Reproducir video de YouTube
+        // === Función mejorada: Soporta Videos normales + YouTube Shorts ===
         function playVideo(url, title) {
             const modal = document.getElementById('videoModal');
             const playerContainer = document.getElementById('videoPlayer');
@@ -183,11 +180,18 @@
             titleEl.innerText = title;
             playerContainer.innerHTML = '';
 
-            // Extraer ID del video de YouTube
             let videoId = '';
+
+            // YouTube normal: https://www.youtube.com/watch?v=VIDEO_ID
             if (url.includes('youtube.com/watch?v=')) {
                 videoId = url.split('v=')[1].split('&')[0];
-            } else if (url.includes('youtu.be/')) {
+            } 
+            // YouTube Shorts: https://www.youtube.com/shorts/VIDEO_ID
+            else if (url.includes('youtube.com/shorts/')) {
+                videoId = url.split('shorts/')[1].split('?')[0];
+            } 
+            // youtu.be (normal o short)
+            else if (url.includes('youtu.be/')) {
                 videoId = url.split('youtu.be/')[1].split('?')[0];
             }
 
@@ -206,7 +210,7 @@
                 playerContainer.appendChild(iframe);
                 modal.style.display = 'block';
             } else {
-                alert('URL de video no válida');
+                alert('URL de video no válida. Asegúrate de pegar un enlace correcto de YouTube o Shorts.');
             }
         }
 
