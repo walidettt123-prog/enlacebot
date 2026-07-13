@@ -14,51 +14,62 @@
     <% if (success) { %><div style="background:#166534;color:white;padding:12px 20px;border-radius:8px;margin:15px 0;"><%= success %></div><% } %>
     <% if (error) { %><div style="background:#991b1b;color:white;padding:12px 20px;border-radius:8px;margin:15px 0;"><%= error %></div><% } %>
 
-    <!-- Formulario para añadir enlace -->
+    <!-- Formulario -->
     <div style="background:#1e293b;padding:25px;border-radius:12px;margin-bottom:30px;">
-        <h2><i class="fas fa-plus-circle"></i> Añadir nuevo enlace</h2>
+        <h2><i class="fas fa-plus-circle"></i> Añadir Contenido</h2>
         
         <form action="/admin/add-link" method="POST" enctype="multipart/form-data">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
                 <div>
                     <label>Título</label>
-                    <input type="text" name="title" required style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px;">
+                    <input type="text" name="title" required style="width:100%; padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:8px;">
                 </div>
                 <div>
-                    <label>URL</label>
-                    <input type="url" name="url" required style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px;">
+                    <label>URL (Enlace o YouTube)</label>
+                    <input type="text" name="url" required style="width:100%; padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:8px;">
                 </div>
             </div>
 
+            <!-- Selector de TIPO -->
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:15px;">
                 <div>
+                    <label>Tipo de contenido</label>
+                    <select name="type" required style="width:100%; padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:8px;">
+                        <option value="enlace">Enlace</option>
+                        <option value="video">Video (YouTube)</option>
+                    </select>
+                </div>
+                <div>
                     <label>Categoría</label>
-                    <select name="category_id" required style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px;">
+                    <select name="category_id" style="width:100%; padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:8px;">
                         <% categories.forEach(cat => { %>
                             <option value="<%= cat.id %>"><%= cat.name %></option>
                         <% }) %>
                     </select>
                 </div>
-                <div>
-                    <label>Icono (opcional)</label>
-                    <input type="file" name="icon" accept="image/*" style="width:100%;padding:8px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px;">
-                </div>
             </div>
 
-            <button type="submit" style="margin-top:20px; background:#3b82f6; color:white; padding:12px 25px; border:none; border-radius:8px; font-weight:600;">
-                <i class="fas fa-plus"></i> Añadir Enlace
+            <!-- Subida de icono -->
+            <div style="margin-top:15px;">
+                <label>Icono (opcional)</label>
+                <input type="file" name="icon" accept="image/*" style="width:100%; padding:8px; background:#0f172a; border:1px solid #334155; color:white; border-radius:8px;">
+            </div>
+
+            <button type="submit" style="margin-top:20px; background:#3b82f6; color:white; padding:12px 30px; border:none; border-radius:8px; font-weight:600;">
+                Añadir Contenido
             </button>
         </form>
     </div>
 
-    <!-- Tabla de enlaces -->
+    <!-- Tabla de contenido -->
     <div style="background:#1e293b;padding:25px;border-radius:12px;">
-        <h2>Enlaces existentes</h2>
+        <h2>Contenido existente</h2>
         <table style="width:100%; border-collapse:collapse; margin-top:15px;">
             <thead>
                 <tr style="background:#0f172a;">
                     <th style="padding:12px;">Icono</th>
                     <th style="padding:12px; text-align:left;">Título</th>
+                    <th style="padding:12px;">Tipo</th>
                     <th style="padding:12px; text-align:left;">URL</th>
                     <th style="padding:12px;">Acciones</th>
                 </tr>
@@ -74,6 +85,7 @@
                         <% } %>
                     </td>
                     <td style="padding:12px;"><strong><%= link.title %></strong></td>
+                    <td style="padding:12px;"><%= link.type || 'enlace' %></td>
                     <td style="padding:12px;"><a href="<%= link.url %>" target="_blank" style="color:#60a5fa;"><%= link.url %></a></td>
                     <td style="padding:12px;">
                         <form action="/admin/delete-link" method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar?')">
