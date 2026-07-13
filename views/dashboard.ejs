@@ -41,7 +41,14 @@
                 <div class="cards-grid">
                     <% favorites.forEach(link => { %>
                         <a href="<%= link.url %>" target="_blank" class="card favorite-card">
-                            <div class="card-icon"><i class="fas fa-link"></i></div>
+                            <div class="card-icon">
+    <% if (link.icon) { %>
+        <img src="<%= link.icon %>" alt="<%= link.title %>" 
+             style="width:32px; height:32px; object-fit:contain; border-radius:6px;">
+    <% } else { %>
+        <i class="fas fa-link"></i>
+    <% } %>
+</div>
                             <div class="card-content">
                                 <h3><%= link.title %></h3>
                                 <p><%= link.category_name || 'General' %></p>
@@ -62,7 +69,14 @@
                         <div class="cards-grid">
                             <% catLinks.forEach(link => { %>
                                 <a href="<%= link.url %>" target="_blank" class="card">
-                                    <div class="card-icon"><i class="fas fa-link"></i></div>
+                                    <div class="card-icon">
+    <% if (link.icon) { %>
+        <img src="<%= link.icon %>" alt="<%= link.title %>" 
+             style="width:32px; height:32px; object-fit:contain; border-radius:6px;">
+    <% } else { %>
+        <i class="fas fa-link"></i>
+    <% } %>
+</div>
                                     <div class="card-content">
                                         <h3><%= link.title %></h3>
                                         <p><%= link.url.replace('https://','').split('/')[0] %></p>
