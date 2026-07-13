@@ -1,12 +1,21 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const session = require("express-session");
 const Database = require("better-sqlite3");
 
 const app = express();
 
+// === Crear carpeta 'data' si no existe ===
+const dataDir = path.join(__dirname, "data");
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    console.log("✅ Carpeta 'data' creada");
+}
+
 // Database initialization
-const db = new Database(path.join(__dirname, "data", "database.db"));
+const dbPath = path.join(dataDir, "database.db");
+const db = new Database(dbPath);
 
 // Create tables if they don't exist
 db.exec(`
@@ -33,21 +42,21 @@ db.exec(`
   );
 `);
 
-// Insert default admin user if not exists (password: admin123)
+// Insert default admin if not exists
 const adminExists = db.prepare("SELECT * FROM users WHERE username = ?").get("admin");
 if (!adminExists) {
   const bcrypt = require("bcrypt");
   const hashedPassword = bcrypt.hashSync("admin123", 10);
   db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run("admin", hashedPassword);
-  console.log("✅ Default admin user created: admin / admin123");
+  console.log("✅ Usuario admin creado (admin / admin123)");
 }
 
-// Insert default categories if empty
+// Insert default categories
 const catCount = db.prepare("SELECT COUNT(*) as count FROM categories").get().count;
 if (catCount === 0) {
   const insertCat = db.prepare("INSERT INTO categories (name) VALUES (?)");
   ["Comunicación", "Energía", "Documentación", "General"].forEach(name => insertCat.run(name));
-  console.log("✅ Default categories created");
+  console.log("✅ Categorías por defecto creadas");
 }
 
 app.set("view engine", "ejs");
@@ -57,15 +66,13 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || "workhub-super-secret-key-2026",
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 } // 24 hours
+  cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }));
 
-// Make db available to routes
 app.locals.db = db;
 
 // Routes
@@ -77,7 +84,6 @@ app.use("/", authRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/admin", adminRoutes);
 
-// Redirect root to dashboard or login
 app.get("/", (req, res) => {
   if (req.session.user) {
     res.redirect("/dashboard");
@@ -89,5 +95,4 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 WorkHub v2.0 running on port ${PORT}`);
-  console.log(`🔗 Local: http://localhost:${PORT}`);
 });
