@@ -1,38 +1,12 @@
 const express = require("express");
-const path = require("path");
-const multer = require("multer");
 const router = express.Router();
-
-// Configuración de Multer para iconos
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/icons/');
-  },
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, unique + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB máximo
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|svg|webp/;
-    if (allowed.test(path.extname(file.originalname).toLowerCase())) {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten imágenes (jpg, png, svg, webp)'));
-    }
-  }
-});
 
 function requireAuth(req, res, next) {
   if (!req.session.user) return res.redirect("/login");
   next();
 }
 
-// === ADMIN DASHBOARD ===
+// Panel Admin
 router.get("/", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   const categories = db.prepare("SELECT * FROM categories ORDER BY name").all();
@@ -52,21 +26,16 @@ router.get("/", requireAuth, (req, res) => {
   });
 });
 
-// === AÑADIR ENLACE CON ICONO ===
-router.post("/add-link", requireAuth, upload.single('icon'), (req, res) => {
+// Añadir enlace (versión simple)
+router.post("/add-link", requireAuth, (req, res) => {
   const { title, url, category_id } = req.body;
   const db = req.app.locals.db;
 
-  let iconPath = null;
-  if (req.file) {
-    iconPath = '/uploads/icons/' + req.file.filename;
-  }
-
   try {
     db.prepare(`
-      INSERT INTO links (title, url, icon, category_id) 
-      VALUES (?, ?, ?, ?)
-    `).run(title, url, iconPath, category_id || null);
+      INSERT INTO links (title, url, category_id) 
+      VALUES (?, ?, ?)
+    `).run(title, url, category_id || null);
 
     res.redirect("/admin?success=Enlace añadido correctamente");
   } catch (err) {
@@ -74,37 +43,14 @@ router.post("/add-link", requireAuth, upload.single('icon'), (req, res) => {
   }
 });
 
-// === EDITAR ENLACE ===
-router.post("/edit-link", requireAuth, upload.single('icon'), (req, res) => {
-  const { id, title, url, category_id } = req.body;
-  const db = req.app.locals.db;
-
-  let iconPath = req.body.current_icon || null;
-  if (req.file) {
-    iconPath = '/uploads/icons/' + req.file.filename;
-  }
-
-  try {
-    db.prepare(`
-      UPDATE links 
-      SET title = ?, url = ?, icon = ?, category_id = ? 
-      WHERE id = ?
-    `).run(title, url, iconPath, category_id || null, id);
-
-    res.redirect("/admin?success=Enlace actualizado");
-  } catch (err) {
-    res.redirect("/admin?error=Error al actualizar");
-  }
-});
-
-// === ELIMINAR ENLACE ===
+// Eliminar enlace
 router.post("/delete-link", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   db.prepare("DELETE FROM links WHERE id = ?").run(req.body.id);
   res.redirect("/admin?success=Enlace eliminado");
 });
 
-// === TOGGLE FAVORITO ===
+// Toggle favorito
 router.post("/toggle-favorite", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   const link = db.prepare("SELECT is_favorite FROM links WHERE id = ?").get(req.body.id);
@@ -113,7 +59,7 @@ router.post("/toggle-favorite", requireAuth, (req, res) => {
   res.redirect("/admin?success=Favorito actualizado");
 });
 
-// === AÑADIR CATEGORÍA ===
+// Añadir categoría
 router.post("/add-category", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   try {
