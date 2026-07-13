@@ -6,18 +6,18 @@ const Database = require("better-sqlite3");
 
 const app = express();
 
-// === Crear carpeta 'data' si no existe ===
+// === Crear la carpeta 'data' automáticamente si no existe ===
 const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
-    console.log("✅ Carpeta 'data' creada");
+    console.log("✅ Carpeta 'data/' creada automáticamente");
 }
 
-// Database initialization
+// Inicializar base de datos
 const dbPath = path.join(dataDir, "database.db");
 const db = new Database(dbPath);
 
-// Create tables if they don't exist
+// Crear tablas si no existen
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,21 +42,21 @@ db.exec(`
   );
 `);
 
-// Insert default admin if not exists
+// Crear usuario admin por defecto
 const adminExists = db.prepare("SELECT * FROM users WHERE username = ?").get("admin");
 if (!adminExists) {
   const bcrypt = require("bcrypt");
-  const hashedPassword = bcrypt.hashSync("admin123", 10);
-  db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run("admin", hashedPassword);
-  console.log("✅ Usuario admin creado (admin / admin123)");
+  const hashed = bcrypt.hashSync("admin123", 10);
+  db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run("admin", hashed);
+  console.log("✅ Usuario admin creado → admin / admin123");
 }
 
-// Insert default categories
+// Crear categorías por defecto
 const catCount = db.prepare("SELECT COUNT(*) as count FROM categories").get().count;
 if (catCount === 0) {
-  const insertCat = db.prepare("INSERT INTO categories (name) VALUES (?)");
-  ["Comunicación", "Energía", "Documentación", "General"].forEach(name => insertCat.run(name));
-  console.log("✅ Categorías por defecto creadas");
+  const stmt = db.prepare("INSERT INTO categories (name) VALUES (?)");
+  ["Comunicación", "Energía", "Documentación", "General"].forEach(name => stmt.run(name));
+  console.log("✅ Categorías creadas");
 }
 
 app.set("view engine", "ejs");
@@ -67,32 +67,24 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || "workhub-super-secret-key-2026",
+  secret: process.env.SESSION_SECRET || "workhub-secret-2026",
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 }
+  cookie: { maxAge: 86400000 }
 }));
 
 app.locals.db = db;
 
-// Routes
-const authRoutes = require("./routes/auth");
-const dashboardRoutes = require("./routes/dashboard");
-const adminRoutes = require("./routes/admin");
-
-app.use("/", authRoutes);
-app.use("/dashboard", dashboardRoutes);
-app.use("/admin", adminRoutes);
+// Rutas
+app.use("/", require("./routes/auth"));
+app.use("/dashboard", require("./routes/dashboard"));
+app.use("/admin", require("./routes/admin"));
 
 app.get("/", (req, res) => {
-  if (req.session.user) {
-    res.redirect("/dashboard");
-  } else {
-    res.redirect("/login");
-  }
+  res.redirect(req.session.user ? "/dashboard" : "/login");
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 WorkHub v2.0 running on port ${PORT}`);
+  console.log(`🚀 WorkHub v2.0 corriendo en puerto ${PORT}`);
 });
