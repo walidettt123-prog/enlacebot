@@ -6,7 +6,7 @@ const Database = require("better-sqlite3");
 
 const app = express();
 
-// Crear carpeta data si no existe
+// === Crear carpeta data si no existe ===
 const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
@@ -14,7 +14,7 @@ if (!fs.existsSync(dataDir)) {
 
 const db = new Database(path.join(dataDir, "database.db"));
 
-// Crear tablas
+// === Crear tablas ===
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,11 +40,21 @@ db.exec(`
   );
 `);
 
-// Añadir columna 'type' si no existe (para proyectos antiguos)
+// === Añadir columna 'type' si no existe (compatibilidad) ===
 try {
   db.exec("ALTER TABLE links ADD COLUMN type TEXT DEFAULT 'enlace'");
-} catch (e) {
-  // La columna ya existe, no hacer nada
+} catch (e) {}
+
+// === Crear usuario admin por defecto ===
+const adminExists = db.prepare("SELECT * FROM users WHERE username = ?").get("admin");
+
+if (!adminExists) {
+  const bcrypt = require("bcrypt");
+  const hashedPassword = bcrypt.hashSync("admin123", 10);
+  db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run("admin", hashedPassword);
+  console.log("✅ Usuario admin creado correctamente → admin / admin123");
+} else {
+  console.log("ℹ️ Usuario admin ya existe en la base de datos");
 }
 
 app.set("view engine", "ejs");
@@ -63,7 +73,7 @@ app.use(session({
 
 app.locals.db = db;
 
-// Rutas
+// === Rutas ===
 app.use("/", require("./routes/auth"));
 app.use("/dashboard", require("./routes/dashboard"));
 app.use("/admin", require("./routes/admin"));
