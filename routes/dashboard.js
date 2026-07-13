@@ -35,8 +35,8 @@ router.get("/", requireAuth, (req, res) => {
       favorites
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Error en el dashboard");
+    console.error("Error en dashboard:", error);
+    res.status(500).send("Error cargando el dashboard");
   }
 });
 
