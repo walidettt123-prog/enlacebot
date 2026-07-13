@@ -1,18 +1,40 @@
 const express = require("express");
+const path = require("path");
+const multer = require("multer");
 const router = express.Router();
 
-// Middleware to check if user is logged in
-function requireAuth(req, res, next) {
-  if (!req.session.user) {
-    return res.redirect("/login");
+// Configuración de Multer para iconos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/icons/');
+  },
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, unique + path.extname(file.originalname));
   }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB máximo
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|svg|webp/;
+    if (allowed.test(path.extname(file.originalname).toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes (jpg, png, svg, webp)'));
+    }
+  }
+});
+
+function requireAuth(req, res, next) {
+  if (!req.session.user) return res.redirect("/login");
   next();
 }
 
-// Admin dashboard
+// === ADMIN DASHBOARD ===
 router.get("/", requireAuth, (req, res) => {
   const db = req.app.locals.db;
-
   const categories = db.prepare("SELECT * FROM categories ORDER BY name").all();
   const links = db.prepare(`
     SELECT l.*, c.name as category_name 
@@ -24,84 +46,81 @@ router.get("/", requireAuth, (req, res) => {
   res.render("admin/index", {
     user: req.session.user,
     categories,
-    links
+    links,
+    success: req.query.success,
+    error: req.query.error
   });
 });
 
-// Add new link
-router.post("/add-link", requireAuth, (req, res) => {
-  const { title, url, category_id, icon } = req.body;
+// === AÑADIR ENLACE CON ICONO ===
+router.post("/add-link", requireAuth, upload.single('icon'), (req, res) => {
+  const { title, url, category_id } = req.body;
   const db = req.app.locals.db;
+
+  let iconPath = null;
+  if (req.file) {
+    iconPath = '/uploads/icons/' + req.file.filename;
+  }
 
   try {
     db.prepare(`
       INSERT INTO links (title, url, icon, category_id) 
       VALUES (?, ?, ?, ?)
-    `).run(title, url, icon || null, category_id || null);
+    `).run(title, url, iconPath, category_id || null);
 
     res.redirect("/admin?success=Enlace añadido correctamente");
-  } catch (error) {
+  } catch (err) {
     res.redirect("/admin?error=Error al añadir el enlace");
   }
 });
 
-// Edit link
-router.post("/edit-link", requireAuth, (req, res) => {
-  const { id, title, url, category_id, icon } = req.body;
+// === EDITAR ENLACE ===
+router.post("/edit-link", requireAuth, upload.single('icon'), (req, res) => {
+  const { id, title, url, category_id } = req.body;
   const db = req.app.locals.db;
+
+  let iconPath = req.body.current_icon || null;
+  if (req.file) {
+    iconPath = '/uploads/icons/' + req.file.filename;
+  }
 
   try {
     db.prepare(`
       UPDATE links 
-      SET title = ?, url = ?, icon = ?, category_id = ?
+      SET title = ?, url = ?, icon = ?, category_id = ? 
       WHERE id = ?
-    `).run(title, url, icon || null, category_id || null, id);
+    `).run(title, url, iconPath, category_id || null, id);
 
     res.redirect("/admin?success=Enlace actualizado");
-  } catch (error) {
+  } catch (err) {
     res.redirect("/admin?error=Error al actualizar");
   }
 });
 
-// Delete link
+// === ELIMINAR ENLACE ===
 router.post("/delete-link", requireAuth, (req, res) => {
-  const { id } = req.body;
   const db = req.app.locals.db;
-
-  try {
-    db.prepare("DELETE FROM links WHERE id = ?").run(id);
-    res.redirect("/admin?success=Enlace eliminado");
-  } catch (error) {
-    res.redirect("/admin?error=Error al eliminar");
-  }
+  db.prepare("DELETE FROM links WHERE id = ?").run(req.body.id);
+  res.redirect("/admin?success=Enlace eliminado");
 });
 
-// Toggle favorite
+// === TOGGLE FAVORITO ===
 router.post("/toggle-favorite", requireAuth, (req, res) => {
-  const { id } = req.body;
   const db = req.app.locals.db;
-
-  try {
-    const link = db.prepare("SELECT is_favorite FROM links WHERE id = ?").get(id);
-    const newFavorite = link.is_favorite === 1 ? 0 : 1;
-
-    db.prepare("UPDATE links SET is_favorite = ? WHERE id = ?").run(newFavorite, id);
-    res.redirect("/admin?success=Favorito actualizado");
-  } catch (error) {
-    res.redirect("/admin?error=Error al actualizar favorito");
-  }
+  const link = db.prepare("SELECT is_favorite FROM links WHERE id = ?").get(req.body.id);
+  const newFav = link.is_favorite === 1 ? 0 : 1;
+  db.prepare("UPDATE links SET is_favorite = ? WHERE id = ?").run(newFav, req.body.id);
+  res.redirect("/admin?success=Favorito actualizado");
 });
 
-// Add new category
+// === AÑADIR CATEGORÍA ===
 router.post("/add-category", requireAuth, (req, res) => {
-  const { name } = req.body;
   const db = req.app.locals.db;
-
   try {
-    db.prepare("INSERT INTO categories (name) VALUES (?)").run(name);
+    db.prepare("INSERT INTO categories (name) VALUES (?)").run(req.body.name);
     res.redirect("/admin?success=Categoría añadida");
-  } catch (error) {
-    res.redirect("/admin?error=La categoría ya existe o hubo un error");
+  } catch (e) {
+    res.redirect("/admin?error=Error al añadir categoría");
   }
 });
 
