@@ -3,7 +3,7 @@ const path = require("path");
 const multer = require("multer");
 const router = express.Router();
 
-// === Configuración de Multer para iconos ===
+// === Configuración Multer para iconos ===
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'public/uploads/icons/');
@@ -22,7 +22,7 @@ const upload = multer({
     if (allowed.test(path.extname(file.originalname).toLowerCase())) {
       cb(null, true);
     } else {
-      cb(new Error('Solo imágenes (jpg, png, svg, webp)'));
+      cb(new Error('Solo se permiten imágenes'));
     }
   }
 });
@@ -32,14 +32,13 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// === ADMIN ===
+// === Panel Admin ===
 router.get("/", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   const categories = db.prepare("SELECT * FROM categories ORDER BY name").all();
   const links = db.prepare(`
     SELECT l.*, c.name as category_name 
-    FROM links l 
-    LEFT JOIN categories c ON l.category_id = c.id 
+    FROM links l LEFT JOIN categories c ON l.category_id = c.id 
     ORDER BY l.title
   `).all();
 
@@ -52,7 +51,7 @@ router.get("/", requireAuth, (req, res) => {
   });
 });
 
-// === AÑADIR ENLACE O VIDEO (con icono) ===
+// === Añadir Contenido (Enlace o Video + Icono) ===
 router.post("/add-link", requireAuth, upload.single('icon'), (req, res) => {
   const { title, url, category_id, type } = req.body;
   const db = req.app.locals.db;
@@ -70,18 +69,18 @@ router.post("/add-link", requireAuth, upload.single('icon'), (req, res) => {
 
     res.redirect("/admin?success=Contenido añadido correctamente");
   } catch (err) {
-    res.redirect("/admin?error=Error al añadir");
+    res.redirect("/admin?error=Error al añadir el contenido");
   }
 });
 
-// === ELIMINAR ===
+// === Eliminar Contenido ===
 router.post("/delete-link", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   db.prepare("DELETE FROM links WHERE id = ?").run(req.body.id);
   res.redirect("/admin?success=Eliminado correctamente");
 });
 
-// === TOGGLE FAVORITO ===
+// === Toggle Favorito ===
 router.post("/toggle-favorite", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   const link = db.prepare("SELECT is_favorite FROM links WHERE id = ?").get(req.body.id);
@@ -90,14 +89,14 @@ router.post("/toggle-favorite", requireAuth, (req, res) => {
   res.redirect("/admin?success=Favorito actualizado");
 });
 
-// === AÑADIR CATEGORÍA ===
+// === Añadir Categoría ===
 router.post("/add-category", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   try {
     db.prepare("INSERT INTO categories (name) VALUES (?)").run(req.body.name);
-    res.redirect("/admin?success=Categoría añadida");
+    res.redirect("/admin?success=Categoría añadida correctamente");
   } catch (e) {
-    res.redirect("/admin?error=Error al añadir categoría");
+    res.redirect("/admin?error=Error al añadir categoría (¿ya existe?)");
   }
 });
 
