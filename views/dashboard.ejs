@@ -9,6 +9,7 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Navbar -->
         <nav class="top-nav">
             <div class="nav-left">
                 <div class="logo">
@@ -29,8 +30,9 @@
                 <p>Bienvenido, <%= user.username %>.</p>
             </div>
 
+            <!-- Buscador -->
             <div style="max-width:400px; margin-bottom:30px;">
-                <input type="text" id="searchInput" placeholder="Buscar enlaces..." 
+                <input type="text" id="searchInput" placeholder="Buscar enlaces..."
                        onkeyup="filterLinks()" style="width:100%; padding:12px 16px; border-radius:9999px; border:1px solid #334155; background:#0f172a; color:white;">
             </div>
 
@@ -42,13 +44,13 @@
                     <% favorites.forEach(link => { %>
                         <a href="<%= link.url %>" target="_blank" class="card favorite-card">
                             <div class="card-icon">
-    <% if (link.icon) { %>
-        <img src="<%= link.icon %>" alt="<%= link.title %>" 
-             style="width:32px; height:32px; object-fit:contain; border-radius:6px;">
-    <% } else { %>
-        <i class="fas fa-link"></i>
-    <% } %>
-</div>
+                                <% if (link.icon) { %>
+                                    <img src="<%= link.icon %>" alt="<%= link.title %>" 
+                                         style="width:32px; height:32px; object-fit:contain; border-radius:6px;">
+                                <% } else { %>
+                                    <i class="fas fa-link"></i>
+                                <% } %>
+                            </div>
                             <div class="card-content">
                                 <h3><%= link.title %></h3>
                                 <p><%= link.category_name || 'General' %></p>
@@ -70,13 +72,13 @@
                             <% catLinks.forEach(link => { %>
                                 <a href="<%= link.url %>" target="_blank" class="card">
                                     <div class="card-icon">
-    <% if (link.icon) { %>
-        <img src="<%= link.icon %>" alt="<%= link.title %>" 
-             style="width:32px; height:32px; object-fit:contain; border-radius:6px;">
-    <% } else { %>
-        <i class="fas fa-link"></i>
-    <% } %>
-</div>
+                                        <% if (link.icon) { %>
+                                            <img src="<%= link.icon %>" alt="<%= link.title %>" 
+                                                 style="width:32px; height:32px; object-fit:contain; border-radius:6px;">
+                                        <% } else { %>
+                                            <i class="fas fa-link"></i>
+                                        <% } %>
+                                    </div>
                                     <div class="card-content">
                                         <h3><%= link.title %></h3>
                                         <p><%= link.url.replace('https://','').split('/')[0] %></p>
