@@ -6,18 +6,15 @@ const Database = require("better-sqlite3");
 
 const app = express();
 
-// === Crear la carpeta 'data' automáticamente si no existe ===
+// Crear carpeta data si no existe
 const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
-    console.log("✅ Carpeta 'data/' creada automáticamente");
 }
 
-// Inicializar base de datos
-const dbPath = path.join(dataDir, "database.db");
-const db = new Database(dbPath);
+const db = new Database(path.join(dataDir, "database.db"));
 
-// Crear tablas si no existen
+// Crear tablas
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,27 +33,18 @@ db.exec(`
     url TEXT NOT NULL,
     icon TEXT,
     category_id INTEGER,
+    type TEXT DEFAULT 'enlace',
     clicks INTEGER DEFAULT 0,
     is_favorite INTEGER DEFAULT 0,
     FOREIGN KEY (category_id) REFERENCES categories(id)
   );
 `);
 
-// Crear usuario admin por defecto
-const adminExists = db.prepare("SELECT * FROM users WHERE username = ?").get("admin");
-if (!adminExists) {
-  const bcrypt = require("bcrypt");
-  const hashed = bcrypt.hashSync("admin123", 10);
-  db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run("admin", hashed);
-  console.log("✅ Usuario admin creado → admin / admin123");
-}
-
-// Crear categorías por defecto
-const catCount = db.prepare("SELECT COUNT(*) as count FROM categories").get().count;
-if (catCount === 0) {
-  const stmt = db.prepare("INSERT INTO categories (name) VALUES (?)");
-  ["Comunicación", "Energía", "Documentación", "General"].forEach(name => stmt.run(name));
-  console.log("✅ Categorías creadas");
+// Añadir columna 'type' si no existe (para proyectos antiguos)
+try {
+  db.exec("ALTER TABLE links ADD COLUMN type TEXT DEFAULT 'enlace'");
+} catch (e) {
+  // La columna ya existe, no hacer nada
 }
 
 app.set("view engine", "ejs");
@@ -67,7 +55,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || "workhub-secret-2026",
+  secret: "workhub-secret-key-2026",
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 86400000 }
@@ -81,7 +69,11 @@ app.use("/dashboard", require("./routes/dashboard"));
 app.use("/admin", require("./routes/admin"));
 
 app.get("/", (req, res) => {
-  res.redirect(req.session.user ? "/dashboard" : "/login");
+  if (req.session.user) {
+    res.redirect("/dashboard");
+  } else {
+    res.redirect("/login");
+  }
 });
 
 const PORT = process.env.PORT || 3000;
