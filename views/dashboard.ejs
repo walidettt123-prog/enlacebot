@@ -1,0 +1,80 @@
+<%- include('layout', { title: 'Dashboard', user: user }) %>
+
+<div class="dashboard-header">
+    <h1><i class="fas fa-home"></i> Panel de Trabajo</h1>
+    <p>Bienvenido de nuevo, <%= user.username %>. Accede rápidamente a todas tus herramientas.</p>
+</div>
+
+<!-- Favorites Section -->
+<% if (favorites && favorites.length > 0) { %>
+<div class="section">
+    <div class="section-header">
+        <h2><i class="fas fa-star"></i> Favoritos</h2>
+    </div>
+    <div class="cards-grid">
+        <% favorites.forEach(link => { %>
+            <a href="<%= link.url %>" target="_blank" class="card favorite-card" onclick="incrementClick(<%= link.id %>)">
+                <div class="card-icon">
+                    <% if (link.icon) { %>
+                        <img src="<%= link.icon %>" alt="<%= link.title %>">
+                    <% } else { %>
+                        <i class="fas fa-link"></i>
+                    <% } %>
+                </div>
+                <div class="card-content">
+                    <h3><%= link.title %></h3>
+                    <p><%= link.category_name || 'General' %></p>
+                </div>
+                <div class="card-actions">
+                    <i class="fas fa-external-link-alt"></i>
+                </div>
+            </a>
+        <% }) %>
+    </div>
+</div>
+<% } %>
+
+<!-- Categories and Links -->
+<% categories.forEach(category => { %>
+    <% const categoryLinks = linksByCategory[category.id] || []; %>
+    <% if (categoryLinks.length > 0) { %>
+    <div class="section">
+        <div class="section-header">
+            <h2><i class="fas fa-folder"></i> <%= category.name %></h2>
+            <span class="badge"><%= categoryLinks.length %> enlaces</span>
+        </div>
+        
+        <div class="cards-grid">
+            <% categoryLinks.forEach(link => { %>
+                <a href="<%= link.url %>" target="_blank" class="card" onclick="incrementClick(<%= link.id %>)">
+                    <div class="card-icon">
+                        <% if (link.icon) { %>
+                            <img src="<%= link.icon %>" alt="<%= link.title %>">
+                        <% } else { %>
+                            <i class="fas fa-link"></i>
+                        <% } %>
+                    </div>
+                    <div class="card-content">
+                        <h3><%= link.title %></h3>
+                        <p><%= link.url.replace('https://', '').replace('http://', '').split('/')[0] %></p>
+                    </div>
+                    <div class="card-actions">
+                        <i class="fas fa-external-link-alt"></i>
+                    </div>
+                </a>
+            <% }) %>
+        </div>
+    </div>
+    <% } %>
+<% }) %>
+
+<script>
+function incrementClick(linkId) {
+    // Optional: track clicks via fetch to backend
+    fetch('/admin/increment-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: linkId })
+    }).catch(() => {});
+}
+</script>

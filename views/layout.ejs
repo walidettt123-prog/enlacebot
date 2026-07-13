@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'WorkHub' %> - Dashboard Profesional</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-left">
+                <div class="logo">
+                    <i class="fas fa-bolt"></i>
+                    <span>WorkHub</span>
+                </div>
+            </div>
+            
+            <div class="nav-center">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar enlaces..." onkeyup="filterLinks()">
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <% if (user) { %>
+                    <div class="user-info">
+                        <span><%= user.username %></span>
+                        <a href="/logout" class="logout-btn">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <%- body %>
+        </main>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
