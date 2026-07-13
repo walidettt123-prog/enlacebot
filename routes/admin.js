@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|svg|webp/;
     if (allowed.test(path.extname(file.originalname).toLowerCase())) {
@@ -38,7 +38,8 @@ router.get("/", requireAuth, (req, res) => {
   const categories = db.prepare("SELECT * FROM categories ORDER BY name").all();
   const links = db.prepare(`
     SELECT l.*, c.name as category_name 
-    FROM links l LEFT JOIN categories c ON l.category_id = c.id 
+    FROM links l 
+    LEFT JOIN categories c ON l.category_id = c.id 
     ORDER BY l.title
   `).all();
 
@@ -51,9 +52,9 @@ router.get("/", requireAuth, (req, res) => {
   });
 });
 
-// === AÑADIR ENLACE CON ICONO ===
+// === AÑADIR ENLACE O VIDEO (con icono) ===
 router.post("/add-link", requireAuth, upload.single('icon'), (req, res) => {
-  const { title, url, category_id } = req.body;
+  const { title, url, category_id, type } = req.body;
   const db = req.app.locals.db;
 
   let iconPath = null;
@@ -62,20 +63,22 @@ router.post("/add-link", requireAuth, upload.single('icon'), (req, res) => {
   }
 
   try {
-    db.prepare(`INSERT INTO links (title, url, icon, category_id) VALUES (?, ?, ?, ?)`)
-      .run(title, url, iconPath, category_id || null);
+    db.prepare(`
+      INSERT INTO links (title, url, icon, category_id, type) 
+      VALUES (?, ?, ?, ?, ?)
+    `).run(title, url, iconPath, category_id || null, type || 'enlace');
 
-    res.redirect("/admin?success=Enlace añadido correctamente");
+    res.redirect("/admin?success=Contenido añadido correctamente");
   } catch (err) {
-    res.redirect("/admin?error=Error al añadir el enlace");
+    res.redirect("/admin?error=Error al añadir");
   }
 });
 
-// === ELIMINAR ENLACE ===
+// === ELIMINAR ===
 router.post("/delete-link", requireAuth, (req, res) => {
   const db = req.app.locals.db;
   db.prepare("DELETE FROM links WHERE id = ?").run(req.body.id);
-  res.redirect("/admin?success=Enlace eliminado");
+  res.redirect("/admin?success=Eliminado correctamente");
 });
 
 // === TOGGLE FAVORITO ===
